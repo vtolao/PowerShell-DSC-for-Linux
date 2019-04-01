@@ -61,7 +61,6 @@ void MI_CALL MSFT_DSCLocalConfigurationManager_Unload(
     _In_opt_ MSFT_DSCLocalConfigurationManager_Self* self,
     _In_ MI_Context* context)
 {
-
     DSC_EventWriteMessageUnLoadingDscEngineProvider();
     UnloadFromProvider(self, context);
 
@@ -72,7 +71,6 @@ void MI_CALL MSFT_DSCLocalConfigurationManager_Unload(
     sigaction(SIGCHLD, &oldAction, NULL);
     memset(&oldAction, 0, sizeof(struct sigaction));
 #endif
-
 }
 
 void MI_CALL MSFT_DSCLocalConfigurationManager_Invoke_SendConfiguration(
