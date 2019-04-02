@@ -757,11 +757,13 @@ MI_Result SetResourcesInOrder(_In_ LCMProviderContext *lcmContext,
         /* Move the resource to desired state.*/
         canceled = MI_FALSE;
         r = MoveToDesiredState(&providerContext, moduleLoader->application, miSession, filteredInstance, regInstance, flags, resultStatus, &canceled, resourceErrorList, extendedError);
+        DSC_LOG_INFO("MoveToDesiredState = %d, *resultStatus = %d\n", r, *resultStatus);
         MI_Instance_Delete(filteredInstance);
         filteredInstance = NULL;
 
         if (r != MI_RESULT_OK)
         {
+            DSC_LOG_INFO("SetResourcesInOrder failed in MoveToDesiredState\n");
             // Failure case, update the resource status
             Intlstr intlstr = Intlstr_Null;
             executionOrder->ExecutionList[xCount].resourceStatus = ResourceProcessedAndFailed;
@@ -804,6 +806,7 @@ MI_Result SetResourcesInOrder(_In_ LCMProviderContext *lcmContext,
 
             // we need to continue moving other resources to their desired state.
             finalr = r;
+            DSC_LOG_INFO("SetResourcesInOrder finalr = %d\n", finalr);
             if (extendedError)
             {
                 if(certificateid != NULL)
@@ -819,6 +822,7 @@ MI_Result SetResourcesInOrder(_In_ LCMProviderContext *lcmContext,
             continue;
         }
         // Success Case 
+        DSC_LOG_INFO("SetResourcesInOrder succeeded in MoveToDesiredState\n");
 
         if (resultStatus != NULL && *resultStatus == MI_TRUE)
         {
@@ -1735,7 +1739,14 @@ MI_Result Exec_NativeProvider(_In_ ProviderCallbackContext *provContext,
     LogCAMessageTime(provContext->lcmProviderContext, ID_CA_SET_TIMEMESSAGE, (const MI_Real64)duration,provContext->resourceId);
 
     // The result of SET operation indicates the final result for this call.
-    result = set_operation_result;
+    if(set_operation_result == 0) // SetTargetResource returned OK
+    {
+        result = MI_RESULT_OK;
+    }
+    else // SetTargetResource reported a failure from the resource.
+    {
+        result = MI_RESULT_FAILED;
+    }
     DSC_LOG_INFO("NativeResourceProvider_SetTargetResource for '%s' returned %d\n", class_name, set_operation_result);
 
 cleanup:
