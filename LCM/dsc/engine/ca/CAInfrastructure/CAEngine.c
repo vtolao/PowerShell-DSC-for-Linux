@@ -1728,21 +1728,15 @@ MI_Result Exec_NativeProvider(_In_ ProviderCallbackContext *provContext,
         goto cleanup;
     }
 
-    if(set_operation_result == 1) // SetTargetResource returned TRUE
-    {
-        result = MI_RESULT_OK;
-    }
-    else // SetTargetResource returned FALSE
-    {
-        result = MI_RESULT_FAILED;
-    }
-    DSC_LOG_INFO("NativeResourceProvider_SetTargetResource for '%s' returned %d\n", class_name, set_operation_result);
-
     //Stop the timer for set
     finish=CPU_GetTimeStamp();
     duration = (MI_Real64)(finish- start) / TIME_PER_SECONND;
     SetMessageInContext(ID_OUTPUT_OPERATION_END,ID_OUTPUT_ITEM_SET,provContext->lcmProviderContext);
     LogCAMessageTime(provContext->lcmProviderContext, ID_CA_SET_TIMEMESSAGE, (const MI_Real64)duration,provContext->resourceId);
+
+    // The result of SET operation indicates the final result for this call.
+    result = set_operation_result;
+    DSC_LOG_INFO("NativeResourceProvider_SetTargetResource for '%s' returned %d\n", class_name, set_operation_result);
 
 cleanup:
 

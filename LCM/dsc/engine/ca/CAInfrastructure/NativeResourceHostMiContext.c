@@ -847,7 +847,7 @@ MI_Result NativeResourceProvider_SetTargetResource(
 
     EH_CheckResult(returnValue);
     
-    *p_operation_result = (MI_Uint32)outputResourceValue.boolean;
+    *p_operation_result = outputResourceValue.uint32;
 
 EH_UNWIND;// Empty statement needed for not-C99-standard compiler on Linux
 
