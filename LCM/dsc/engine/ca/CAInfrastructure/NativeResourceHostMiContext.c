@@ -397,6 +397,7 @@ MI_Result NativeResourceProvider_New(const _In_z_ MI_Char* resourceProviderPath,
     //
     // Get the class declaration for the the provider and invoke the Load method on the class
     //
+    DSC_LOG_INFO("NativeResourceProviderMiModule_GetClassDecl(%s)", resourceProviderClassName);
     returnValue = NativeResourceProviderMiModule_GetClassDecl(nativeResourceProviderLocal->_private.resourceProviderMiModule, 
                                                     resourceProviderClassName, 
                                                      (const MI_ClassDecl **) &nativeResourceProviderLocal->_private.resourceClassDecl);

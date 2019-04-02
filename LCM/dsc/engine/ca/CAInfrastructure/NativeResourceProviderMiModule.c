@@ -241,6 +241,7 @@ MI_Result NativeResourceProviderMiModule_GetClassDecl(const _In_ NativeResourceP
         if (!c) // end of array
             break;
 
+        DSC_LOG_INFO("Comparing class '%s' with '%s'", c->name, className);
         if (Tcscasecmp(c->name, className) == 0)
         {
             *classDecl = c;
