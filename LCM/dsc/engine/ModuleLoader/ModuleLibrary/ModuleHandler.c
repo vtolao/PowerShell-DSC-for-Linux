@@ -463,35 +463,39 @@ MI_Result GetModuleLoader( _In_ MI_Application *miApp,
         return r;
     }
 
-#if !defined(BUILD_OMS)
-    // Get the Registration information from shared objects
-    r = GetRegistrationInstanceFromSharedObjects(NULL, miApp, de, options, strictOptions, &miClassArray, &miInstanceArray, extendedError);
-    if( r != MI_RESULT_OK)
+#if defined(BUILD_OMS)
+    if (g_DscHost == MI_FALSE)
     {
-        MI_Deserializer_Close(de);
-        MI_OperationOptions_Delete(options);
-        DSC_free(de);
-        DSC_free(options);
-        CleanUpClassCache(&miClassArray);
-        CleanUpInstanceCache(&miInstanceArray);
-        return r;
+#endif
+        // Get the Registration information from shared objects
+        r = GetRegistrationInstanceFromSharedObjects(NULL, miApp, de, options, strictOptions, &miClassArray, &miInstanceArray, extendedError);
+        if( r != MI_RESULT_OK)
+        {
+            MI_Deserializer_Close(de);
+            MI_OperationOptions_Delete(options);
+            DSC_free(de);
+            DSC_free(options);
+            CleanUpClassCache(&miClassArray);
+            CleanUpInstanceCache(&miInstanceArray);
+            return r;
+        }
+
+        // No need to do this after removing OMI since we will discover resources directly from shared objects (except for DIY DSC)
+        /*Perform registration against schema validation*/
+        r = ValidateProviderRegistrationAgainstSchema(&miClassArray, &miInstanceArray, extendedError);
+        if( r != MI_RESULT_OK)
+        {
+            MI_Deserializer_Close(de);
+            MI_OperationOptions_Delete(options);
+            DSC_free(de);
+            DSC_free(options);
+            CleanUpClassCache(&miClassArray);
+            CleanUpInstanceCache(&miInstanceArray);
+            return r;
+        }
+#if defined(BUILD_OMS)
     }
 #endif
-    
-
-    // No need to do this after removing OMI since we will discover resources directly from shared objects (except for DIY DSC)
-    // /*Perform registration against schema validation*/
-    // r = ValidateProviderRegistrationAgainstSchema(&miClassArray, &miInstanceArray, extendedError);
-    // if( r != MI_RESULT_OK)
-    // {
-    //     MI_Deserializer_Close(de);
-    //     MI_OperationOptions_Delete(options);
-    //     DSC_free(de);
-    //     DSC_free(options);
-    //     CleanUpClassCache(&miClassArray);
-    //     CleanUpInstanceCache(&miInstanceArray);
-    //     return r;
-    // }
 
     /*Form mapping tables*/
 

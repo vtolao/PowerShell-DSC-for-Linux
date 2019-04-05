@@ -92,7 +92,11 @@ int main(int argc, char *argv[])
         Convert_MIInstance_JSON(extended_error, &operation_error_root_value);
         goto CleanUp;
     }
-#endif  
+#endif
+
+#if defined(BUILD_OMS)
+    g_DscHost = MI_TRUE;
+#endif
 
     if(argc < 3)
     {

@@ -54,6 +54,10 @@ MI_Boolean g_bNotFirstTimeReport = MI_FALSE;
 LCMProviderContext g_baselcmContext = {0};
 LCMProviderContext * g_lcmContext = &g_baselcmContext;
 
+#if defined(BUILD_OMS)
+MI_Boolean g_DscHost = MI_FALSE;
+#endif
+
 MI_Result ReportStatusToServer(
         _In_ LCMProviderContext *lcmContext,
         _In_opt_z_ const MI_Char * errorMessage,
@@ -6170,7 +6174,12 @@ MI_Result MI_CALL LCM_Pull_Execute(
                     {
                         return result;
                     }
-#if !defined(BUILD_OMS)
+#if defined(BUILD_OMS)
+                    if (g_DscHost == MI_FALSE)
+                    {
+                        system(OMI_RELOAD_COMMAND);
+                    }
+#else
                     system(OMI_RELOAD_COMMAND);
 #endif
                 }
@@ -6548,26 +6557,6 @@ MI_Result TimeToRunConsistencyCheck(
     MI_Instance_Delete(currentMetaConfigInstance);
     return MI_RESULT_OK;
 }
-
-// #if defined(BUILD_OMS)
-// void handleSIGCHLDSignal(int sig)
-// {
-//     int saved_errorno = errno;
-
-//     // TODO: Maybe addressed later.
-//     // DSC_EventWriteMessageWaitForChildProcess();
-
-//     // OMS providers registers the SIGINT handler but may not have
-//     // an opportunity to clean up before getting unloaded.
-//     // This code is to ensure that OMSConfig picks up the work left off by
-//     // the OMS providers of cleaning up zombie processes.
-//     // Only one instance of SIGCHLD can be queued, so it becomes necessary to reap
-//     // several zombie processes during one invocation of the handler function.
-//     while (waitpid((pid_t)(-1), 0, WNOHANG) > 0) { }
-
-//     errno = saved_errorno;
-// }
-// #endif
 
 MI_Result SetLCMStatusBusy()
 {
