@@ -7,11 +7,21 @@ AUDISP_DIR=/etc/audisp/plugins.d
 AUDISP_CONF=$AUDISP_DIR/auoms.conf
 
 AUOMS_BIN=/opt/microsoft/auoms/bin/auoms
+AUOMSCOLLECT_BIN=/opt/microsoft/auoms/bin/auomscollect
+AUOMSCTL_BIN=/opt/microsoft/auoms/bin/auomsctl
 AUOMS_CONF_FILE=/etc/opt/microsoft/auoms/auoms.conf
+AUOMSCOLLECT_CONF_FILE=/etc/opt/microsoft/auoms/auomscollect.conf
 AUOMS_OUTCONF_DIR=/etc/opt/microsoft/auoms/outconf.d
+AUOMS_RULES_DIR=/etc/opt/microsoft/auoms/rules.d
+AUOMS_AUDIT_RULES_PATH=/etc/opt/microsoft/auoms/rules.d/oms-security-audit.rules
 
 AUDIT_RULES_FILE=/etc/audit/audit.rules
 OMS_AUDIT_RULES_PATH=/etc/audit/rules.d/oms-security-audit.rules
+
+TMP_PLUGIN_STATE_FILE=auditd_plugin.state
+TMP_RULES_FILE=auditd_plugin.rules
+TMP_LOADED_RULES_FILE=auditd_loaded.rules
+TMP_AUOMS_STATE_FILE=auoms.state
 
 umask 027
 
@@ -23,6 +33,10 @@ get_plugin_state () {
 }
 
 set_plugin_state () {
+    COLLECT_BIN=$AUOMS_BIN
+    if [ -e $AUOMSCTL_BIN ]; then
+        COLLECT_BIN=$AUOMSCOLLECT_BIN
+    fi
     # Edit the conf file
     if [ -e $AUDISP_CONF ]; then
         sed -i "s/^\( *active *= *\)[enosy]*/\1$1/" $AUDISP_CONF
@@ -31,7 +45,7 @@ set_plugin_state () {
 # Created by OMSAuditdPlugin.sh
 active = $1
 direction = out
-path = $AUOMS_BIN
+path = $SCOLLECT_BIN
 type = always
 format = string
 EOF
@@ -63,21 +77,44 @@ EOF
 
     if [ $1 = "yes" ]; then
         # Make sure auoms started
-        pgrep -f $AUOMS_BIN 2>&1 >/dev/null
+        pgrep -x -f -U 0 $COLLECT_BIN 2>&1 >/dev/null
         if [ $? -ne 0 ]; then
             return 2
         fi
     else
         # make sure auoms stopped
-        pgrep -f $AUOMS_BIN 2>&1 >/dev/null
+        pgrep -x -f -U 0 $COLLECT_BIN 2>&1 >/dev/null
         if [ $? -eq 0 ]; then
-            pkill -KILL -f $AUOMS_BIN
-            pgrep -f $AUOMS_BIN 2>&1 >/dev/null
+            pkill -KILL -x -f -U 0 $COLLECT_BIN
+            pgrep -x -f -U 0 $COLLECT_BIN 2>&1 >/dev/null
             if [ $? -eq 0 ]; then
                 return 2
             fi
         fi
     fi
+}
+
+get_auoms_state () {
+    $AUOMSCTL_BIN status >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        $AUOMSCTL_BIN status >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            echo running
+        else
+            echo enabled
+        fi
+    else
+        echo disabled
+    fi
+}
+
+set_auoms_state () {
+    if [ $1 = "running" ]; then
+        $AUOMSCTL_BIN enable
+    else
+        $AUOMSCTL_BIN disable
+    fi
+    exit $?
 }
 
 use_augenrules () {
@@ -91,7 +128,13 @@ use_augenrules () {
 }
 
 get_actual_rules () {
-    if use_augenrules; then
+    if [ -e $AUOMSCTL_BIN ]; then
+        if [ -e $AUOMS_AUDIT_RULES_PATH ]; then
+            cat $AUOMS_AUDIT_RULES_PATH
+            return $?
+        fi
+        return 0
+    elif use_augenrules; then
         if [ -e $OMS_AUDIT_RULES_PATH ]; then
             cat $OMS_AUDIT_RULES_PATH
             return $?
@@ -117,7 +160,15 @@ get_actual_rules () {
 }
 
 remove_rules () {
-    if use_augenrules; then
+    if [ -e $AUOMSCTL_BIN ]; then
+        if [ -e $AUOMS_AUDIT_RULES_PATH ]; then
+            rm -f $AUOMS_AUDIT_RULES_PATH
+            if [ $? -ne 0 ]; then
+                echo "Failed to remove $AUOMS_AUDIT_RULES_PATH" >&2
+                return 1
+            fi
+        fi
+    elif use_augenrules; then
         if [ -e $OMS_AUDIT_RULES_PATH ]; then
             rm -f $OMS_AUDIT_RULES_PATH
             if [ $? -ne 0 ]; then
@@ -162,7 +213,25 @@ remove_rules () {
 }
 
 set_rules () {
-    if use_augenrules; then
+    if [ -e $AUOMSCTL_BIN ]; then
+        cp $1 $AUOMS_AUDIT_RULES_PATH
+        if [ $? -ne 0 ]; then
+            echo "Failed to create $AUOMS_AUDIT_RULES_PATH" >&2
+            return 1
+        fi
+        chown root.root $AUOMS_AUDIT_RULES_PATH
+        if [ $? -ne 0 ]; then
+            echo "Failed to set ownership of $AUOMS_AUDIT_RULES_PATH" >&2
+            rm -f $AUOMS_AUDIT_RULES_PATH
+            return 1
+        fi
+        chmod 644 $AUOMS_AUDIT_RULES_PATH
+        if [ $? -ne 0 ]; then
+            echo "Failed to set permissions for $AUOMS_AUDIT_RULES_PATH" >&2
+            rm -f $AUOMS_AUDIT_RULES_PATH
+            return 1
+        fi
+    elif use_augenrules; then
         cp $1 $OMS_AUDIT_RULES_PATH
         if [ $? -ne 0 ]; then
             echo "Failed to create $OMS_AUDIT_RULES_PATH" >&2
@@ -228,34 +297,52 @@ set_rules () {
 
 case $1 in
     get)
-        AUDIT_VERSION=$(/sbin/auditctl -v | sed 's/^[^0-9]*\([0-9]\.[0-9]\).*$/\1/')
-        if [ $? -ne 0 ]; then
-            echo "Failed to determine auditctl version"
-            exit 2
-        fi
-        # $2 tmp dir
-        get_plugin_state > $2/auditd_plugin.state
-        if [ $? -ne 0 ]; then
-            rm $2/auditd_plugin.state
-            exit 3
-        else
-            chown omsagent.omiusers $2/auditd_plugin.state 2>&1 >/dev/null
+        AUDIT_VERSION=0
+        if [ -e /sbin/auditctl ]; then
+            AUDIT_VERSION=$(/sbin/auditctl -v | sed 's/^[^0-9]*\([0-9]\.[0-9]\).*$/\1/')
+            if [ $? -ne 0 ]; then
+                echo "Failed to determine auditctl version"
+                exit 2
+            fi
         fi
 
-        get_actual_rules > $2/auditd_plugin.rules
+        # $2 tmp dir
+        if [ -e /sbin/auditctl ]; then
+            get_plugin_state > $2/$TMP_PLUGIN_STATE_FILE
+            if [ $? -ne 0 ]; then
+                rm $2/$TMP_PLUGIN_STATE_FILE
+                exit 3
+            else
+                chown omsagent.omiusers $2/$TMP_PLUGIN_STATE_FILE 2>&1 >/dev/null
+            fi
+        fi
+
+        if [ -e $AUOMSCTL_BIN ]; then
+            get_auoms_state > $2/$TMP_AUOMS_STATE_FILE
+            if [ $? -ne 0 ]; then
+                rm $2/$TMP_AUOMS_STATE_FILE
+                exit 3
+            else
+                chown omsagent.omiusers $2/$TMP_AUOMS_STATE_FILE 2>&1 >/dev/null
+            fi
+        fi
+
+        get_actual_rules > $2/$TMP_RULES_FILE
         if [ $? -ne 0 ]; then
-            rm $2/auditd_plugin.rules
+            rm $2/$TMP_RULES_FILE
             exit 4
         else
-            chown omsagent.omiusers $2/auditd_plugin.rules 2>&1 >/dev/null
+            chown omsagent.omiusers $2/$TMP_RULES_FILE 2>&1 >/dev/null
         fi
 
-        /sbin/auditctl -l > $2/auditd_loaded.rules 2>/dev/null
-        if [ $? -ne 0 ]; then
-            rm $2/auditd_loaded.rules
-            exit 5
-        else
-            chown omsagent.omiusers $2/auditd_loaded.rules 2>&1 >/dev/null
+        if [ ! -e $AUOMSCTL_BIN ]; then
+            /sbin/auditctl -l > $2/$TMP_LOADED_RULES_FILE 2>/dev/null
+            if [ $? -ne 0 ]; then
+                rm $2/$TMP_LOADED_RULES_FILE
+                exit 5
+            else
+                chown omsagent.omiusers $2/$TMP_LOADED_RULES_FILE 2>&1 >/dev/null
+            fi
         fi
 
         echo $AUDIT_VERSION
@@ -268,6 +355,8 @@ case $1 in
         # $6 source auoms outconf file ("" if no change, or "remove" to remove file)
         # $7 rules to pass to auditctl -R
         # $8 source auoms conf file ("" if no change)
+        # $9 source auomscollect conf file ("" if no change)
+        # $10 auoms state (or "" if it doesn't need to change)
         if [ -n "$2" ]; then
             /opt/microsoft/omsagent/bin/service_control restart $2
             if [ $? -ne 0 ]; then
@@ -287,6 +376,7 @@ case $1 in
         fi
 
         AUDITD_RELOAD=0
+        AUOMS_RESTART=0
         if [ -n "$8" ]; then
             cp $8 ${AUOMS_CONF_FILE}
             if [ $? -ne 0 ]; then
@@ -296,7 +386,27 @@ case $1 in
             if [ $? -ne 0 ]; then
                 exit 9
             fi
-            AUDITD_RELOAD=1
+            if [ -e $AUOMSCTL_BIN ]; then
+                AUOMS_RESTART=1
+            else
+                AUDITD_RELOAD=1
+            fi
+        fi
+        if [ -n "$9" ]; then
+            cp $9 ${AUOMSCOLLECT_CONF_FILE}
+            if [ $? -ne 0 ]; then
+                exit 10
+            fi
+            chmod 644 ${AUOMSCOLLECT_CONF_FILE}
+            if [ $? -ne 0 ]; then
+                exit 10
+            fi
+            if [ -e $AUOMSCTL_BIN ]; then
+                AUOMS_RESTART=1
+            fi
+            if [ -e /sbin/auditctl ]; then
+                AUDITD_RELOAD=1
+            fi
         fi
         if [ -n "$6" ]; then
             if [ "$6" == "remove" ]; then
@@ -314,40 +424,68 @@ case $1 in
                     exit 5
                 fi
             fi
-            AUDITD_RELOAD=1
+            if [ -e $AUOMSCTL_BIN ]; then
+                AUOMS_RESTART=1
+            else
+                AUDITD_RELOAD=1
+            fi
         fi
 
-        if [ -n "$3" ]; then
-            set_plugin_state $3
-            RET=$?
-            if [ $RET -ne 0 ]; then
-                if [ $RET -eq 2 ]; then
-                    exit 6
-                else
-                    exit 3
+        # Only touch plugin state or auditd service if auditd is installed
+        if [ -e /sbin/auditctl ]; then
+            if [ -n "$3" ]; then
+                set_plugin_state $3
+                RET=$?
+                if [ $RET -ne 0 ]; then
+                    if [ $RET -eq 2 ]; then
+                        exit 6
+                    else
+                        exit 3
+                    fi
+                fi
+            elif [ $AUDITD_RELOAD -eq 1 ]; then
+                # Notify auditd of changes
+                service auditd reload
+                if [ $? -ne 0 ]; then
+                    exit 8
                 fi
             fi
-        elif [ $AUDITD_RELOAD -eq 1 ]; then
-            # Notify auditd of changes
-            service auditd reload
-            if [ $? -ne 0 ]; then
-                exit 8
+        fi
+        if [ -e $AUOMSCTL_BIN ]; then
+            if [ -n "${10}" ]; then
+                set_auoms_state ${10}
+                RET=$?
+                if [ $RET -ne 0 ]; then
+                    if [ $RET -eq 2 ]; then
+                        exit 6
+                    else
+                        exit 13
+                    fi
+                fi
+            elif [ $AUOMS_RESTART -eq 1 ]; then
+                service auoms restart
+                if [ $? -ne 0 ]; then
+                    exit 11
+                fi
             fi
         fi
 
-        if [ -n "$7" ]; then
-            if /sbin/auditctl -s | grep -qe 'enabled[=| ]2'; then
-                echo "Audit configuration is locked for the current session. The system needs to be rebooted to update the auditing rules."
-                exit 7
-            fi
-            TmpFile=$(mktemp /tmp/OMSAuditdPlugin.XXXXXXXX)
-            cp $7 $TmpFile
-            /sbin/auditctl -R $TmpFile
-            if [ $? -ne 0 ]; then
+        # Only attempt to load rules if auditctl is present and auoms 2.0 is not installed
+        if [ -e /sbin/auditctl -a ! -e $AUOMSCTL_BIN ]; then
+            if [ -n "$7" ]; then
+                if /sbin/auditctl -s | grep -qe 'enabled[=| ]2'; then
+                    echo "Audit configuration is locked for the current session. The system needs to be rebooted to update the auditing rules."
+                    exit 12
+                fi
+                TmpFile=$(mktemp /tmp/OMSAuditdPlugin.XXXXXXXX)
+                cp $7 $TmpFile
+                /sbin/auditctl -R $TmpFile
+                if [ $? -ne 0 ]; then
+                    rm -f $TmpFile
+                    exit 7
+                fi
                 rm -f $TmpFile
-                exit 7
             fi
-            rm -f $TmpFile
         fi
         ;;
     *)
