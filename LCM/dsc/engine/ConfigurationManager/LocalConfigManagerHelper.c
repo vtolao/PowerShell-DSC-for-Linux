@@ -54,10 +54,6 @@ MI_Boolean g_bNotFirstTimeReport = MI_FALSE;
 LCMProviderContext g_baselcmContext = {0};
 LCMProviderContext * g_lcmContext = &g_baselcmContext;
 
-#if defined(BUILD_OMS)
-MI_Boolean g_DscHost = MI_FALSE;
-#endif
-
 MI_Result ReportStatusToServer(
         _In_ LCMProviderContext *lcmContext,
         _In_opt_z_ const MI_Char * errorMessage,
