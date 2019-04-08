@@ -29,6 +29,9 @@
 
 extern const ModuleManagerFT g_ModuleManagerFT;
 
+#if defined(BUILD_OMS)
+extern MI_Boolean g_DscHost;
+#endif
 
 MI_Result MI_CALL InitializeModuleManager( MI_Uint32 flags,
                                           _Outptr_result_maybenull_ MI_Instance **extendedError,

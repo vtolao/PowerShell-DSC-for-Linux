@@ -32,9 +32,9 @@
 #include "RegistrationManager.h"
 #include "OMI_LocalConfigManagerHelper.h"
 
-// #if defined(BUILD_OMS)
-// #include <signal.h>
-// #endif
+#if defined(BUILD_OMS)
+extern MI_Boolean g_DscHost;
+#endif
 
 #define NOT_INITIALIZED         0
 #define INITIALIZED             1

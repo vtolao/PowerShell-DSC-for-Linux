@@ -35,7 +35,10 @@
 #include "EventWrapper.h"
 
 #if defined(BUILD_OMS)
+
 #include <signal.h>
+extern MI_Boolean g_DscHost;
+
 #endif
 
 volatile MI_Operation *g_CurrentWmiv2Operation = NULL;
