@@ -121,7 +121,7 @@ def perform_inventory(args):
     report_path = join(dsc_configuration_path, 'Inventory.xml')
     inventorylock_path = join(dsc_sysconfdir, 'inventory_lock')
 
-    if ("omsconfig" in helperlib.DSC_SCRIPT_PATH) and (os.path.isfile(dsc_host_switch_path):):
+    if ("omsconfig" in helperlib.DSC_SCRIPT_PATH) and (os.path.isfile(dsc_host_switch_path)):
         is_oms_config = True
     else:
         is_oms_config = False
