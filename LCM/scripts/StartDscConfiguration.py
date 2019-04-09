@@ -121,7 +121,7 @@ def main(argv):
     dsc_host_lock_path = join(dsc_host_base_path, 'dsc_host_lock')
     dsc_host_switch_path = join(dsc_host_base_path, 'dsc_host_ready')
 
-    if ("omsconfig" in helperlib.DSC_SCRIPT_PATH) and (os.path.isfile(dsc_host_switch_path)):
+    if ("omsconfig" in helperlib.DSC_SCRIPT_PATH) and (isfile(dsc_host_switch_path)):
         is_oms_config = True
     else:
         is_oms_config = False
