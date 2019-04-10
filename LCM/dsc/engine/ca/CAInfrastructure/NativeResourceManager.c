@@ -3,6 +3,7 @@
 #include "pal/strings.h"
 #include "ModuleHandlerInternal.h"
 #include "NativeResourceManager.h"
+#include "EventWrapper.h"
 
 typedef struct _NativeResourceManagerHashMapBucket
 {
