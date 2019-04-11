@@ -9,6 +9,12 @@ from sys                import argv, exc_info, exit, stdout, version_info
 from traceback          import format_exc
 from xml.dom.minidom    import parse
 
+import json
+import time
+import datetime
+import os
+import os.path
+
 pathToCurrentScript = realpath(__file__)
 pathToCommonScriptsFolder = dirname(pathToCurrentScript)
 
@@ -120,6 +126,22 @@ def perform_inventory(args):
     temp_report_path = join(dsc_configuration_path, 'Inventory.xml.temp')
     report_path = join(dsc_configuration_path, 'Inventory.xml')
     inventorylock_path = join(dsc_sysconfdir, 'inventory_lock')
+
+    if ("omsconfig" in helperlib.DSC_SCRIPT_PATH):
+        with open(dsc_host_telemetry_path) as host_telemetry_file:
+            host_telemetry_json = json.load(host_telemetry_file)
+
+        msg_template = '<OMSCONFIGLOG>[{}] [{}] [{}] [{}] [{}:{}] {}</OMSCONFIGLOG>'
+        timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S')
+        if isfile(dsc_host_switch_path):
+            msg_buffer = 'Using dsc_host'
+        else:
+            msg_buffer = 'Falling back to OMI'
+        new_msg = msg_template.format(timestamp, os.getpid(), 'INFO', 0, pathToCurrentScript, 0, msg_buffer)
+        host_telemetry_json['message'] += new_msg
+        json.dump(host_telemetry_json, dsc_host_telemetry_path)
+        with open(dsc_host_telemetry_path, 'a+') as host_telemetry_file:
+            json.dump(host_telemetry_json, host_telemetry_file)
 
     if ("omsconfig" in helperlib.DSC_SCRIPT_PATH) and (isfile(dsc_host_switch_path)):
         is_oms_config = True
