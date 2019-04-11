@@ -122,6 +122,7 @@ def perform_inventory(args):
     dsc_host_output_path = join(dsc_host_base_path, 'output')
     dsc_host_lock_path = join(dsc_host_base_path, 'dsc_host_lock')
     dsc_host_switch_path = join(dsc_host_base_path, 'dsc_host_ready')
+    dsc_host_telemetry_path = join(dsc_host_base_path, '/var/opt/microsoft/omsconfig/status/omsconfighost')
     dsc_configuration_path = join(dsc_sysconfdir, 'configuration')
     temp_report_path = join(dsc_configuration_path, 'Inventory.xml.temp')
     report_path = join(dsc_configuration_path, 'Inventory.xml')

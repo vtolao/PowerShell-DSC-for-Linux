@@ -66,6 +66,7 @@ def apply_meta_config(args):
         dsc_host_output_path = join(dsc_host_base_path, 'output')
         dsc_host_lock_path = join(dsc_host_base_path, 'dsc_host_lock')
         dsc_host_switch_path = join(dsc_host_base_path, 'dsc_host_ready')
+        dsc_host_telemetry_path = join(dsc_host_base_path, '/var/opt/microsoft/omsconfig/status/omsconfighost')
 
         if ("omsconfig" in helperlib.DSC_SCRIPT_PATH):
             with open(dsc_host_telemetry_path) as host_telemetry_file:
