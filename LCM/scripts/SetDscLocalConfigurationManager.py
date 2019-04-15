@@ -11,6 +11,7 @@ import time
 import datetime
 import os
 import os.path
+import OmsConfigHostHelpers
 
 pathToCurrentScript = realpath(__file__)
 pathToCommonScriptsFolder = dirname(pathToCurrentScript)
@@ -69,19 +70,7 @@ def apply_meta_config(args):
         dsc_host_telemetry_path = join(dsc_host_base_path, '/var/opt/microsoft/omsconfig/status/omsconfighost')
 
         if ("omsconfig" in helperlib.DSC_SCRIPT_PATH):
-            with open(dsc_host_telemetry_path, 'r+') as host_telemetry_file:
-                host_telemetry_json = json.load(host_telemetry_file)
-
-            msg_template = '<OMSCONFIGLOG>[{}] [{}] [{}] [{}] [{}:{}] {}</OMSCONFIGLOG>'
-            timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y/%m/%d %H:%M:%S')
-            if isfile(dsc_host_switch_path):
-                msg_buffer = 'Using dsc_host'
-            else:
-                msg_buffer = 'Falling back to OMI'
-            new_msg = msg_template.format(timestamp, os.getpid(), 'INFO', 0, pathToCurrentScript, 0, msg_buffer)
-            host_telemetry_json['message'] += new_msg
-            with open(dsc_host_telemetry_path, 'a+') as host_telemetry_file:
-                json.dump(host_telemetry_json, host_telemetry_file)
+            write_omsconfig_host_event(pathToCurrentScript, isfile(dsc_host_switch_path))
 
         if ("omsconfig" in helperlib.DSC_SCRIPT_PATH) and (isfile(dsc_host_switch_path)):
             is_oms_config = True

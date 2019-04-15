@@ -19,7 +19,10 @@
 #include "EventWrapper.h"
 #include <pal/cpu.h>
 #include <unistd.h>
-
+#include <time.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include "parson.h"
 
 ConfigurationDetails g_ConfigurationDetails;
@@ -60,6 +63,23 @@ static int _GetDSCTimeStamp(_Pre_writable_size_(TIMESTAMP_SIZE) char buf[TIMESTA
         tm.tm_hour,
         tm.tm_min,
         tm.tm_sec);
+    return 0;
+}
+
+static int GetDSCCurrentUTCTime(_Pre_writable_size_(TIMESTAMP_SIZE) char buf[TIMESTAMP_SIZE])
+{
+    struct timespec time_spec;
+    int r = 0;
+
+
+    r = clock_gettime(CLOCK_REALTIME, &time_spec);
+    if (r != 0)
+    {
+        return r;
+    }
+
+    snprintf(buf, TIMESTAMP_SIZE, "%"PRId64"", time_spec.tv_nsec);
+
     return 0;
 }
 
@@ -111,36 +131,41 @@ void DSCFileVPutTelemetry(
         va_list ap
     )
 {
-    char tmp_msg_buffer[MSGSIZE * 2];
+    char msg_buffer[MSGSIZE * 2];
     char formatter_msg_buffer[MSGSIZE];
     char timestamp_buffer[TIMESTAMP_SIZE];
+    char buf[TIMESTAMP_SIZE];
     _GetDSCTimeStamp(timestamp_buffer);
 
     int current_pid = getpid();
 
     Vstprintf(formatter_msg_buffer, MSGSIZE , format, ap);
-    Stprintf(tmp_msg_buffer, MSGSIZE * 2, PAL_T("<OMSCONFIGLOG>[%s] [%d] [%s] [%d] [%s:%d] %s</OMSCONFIGLOG>"), timestamp_buffer, current_pid, _levelDSCStrings[level], eventId, file, line, formatter_msg_buffer);
+    Stprintf(msg_buffer, MSGSIZE * 2, PAL_T("<OMSCONFIGLOG>[%s] [%d] [%s] [%d] [%s:%d] %s</OMSCONFIGLOG>"), timestamp_buffer, current_pid, _levelDSCStrings[level], eventId, file, line, formatter_msg_buffer);
 
-    JSON_Value *telemetry_root_value = NULL;
-    telemetry_root_value = json_parse_file("/var/opt/microsoft/omsconfig/status/omsconfighost");
+    JSON_Value *telemetry_parameter_value = json_value_init_object();
+    JSON_Object *telemetry_parameter_object = json_value_get_object(telemetry_parameter_value);
+    json_object_set_string(telemetry_parameter_object, "Name", "Microsoft.EnterpriseCloud.Monitoring.OmsConfigHost");
+    json_object_set_string(telemetry_parameter_object, "Version", "1.0");
+    json_object_set_boolean(telemetry_parameter_object, "IsInternal", 0);
+    json_object_set_string(telemetry_parameter_object, "Operation", "omsconfig_host");
+    json_object_set_boolean(telemetry_parameter_object, "OperationSuccess", 1);
+    json_object_set_string(telemetry_parameter_object, "Message", msg_buffer);
+    json_object_set_number(telemetry_parameter_object, "Duration", 0);
+    json_object_set_string(telemetry_parameter_object, "ExtentionType", "");
 
-    if (json_value_get_type(telemetry_root_value) != JSONObject) {
-        telemetry_root_value = json_value_init_object();
-    }
-
+    JSON_Value *telemetry_root_value = json_value_init_object();
     JSON_Object *telemetry_root_object = json_value_get_object(telemetry_root_value);
 
-    const char *current_message_buffer = NULL;
-    current_message_buffer = json_object_get_string(telemetry_root_object, "message");
+    json_object_set_string(telemetry_root_object, "providerId", "69B669B9-4AF8-4C50-BDC4-6006FA76E975");
+    json_object_set_value(telemetry_root_object, "parameters", telemetry_root_value);
+    json_object_set_number(telemetry_root_object, "eventId", 1);
 
-    char new_msg_buffer[BIGMSGSIZE];
-    snprintf(new_msg_buffer, BIGMSGSIZE, "%s%s", current_message_buffer, tmp_msg_buffer);
+    char filename_timestamp[TIMESTAMP_SIZE];
+    char event_file_name[MSGSIZE];
+    GetDSCCurrentUTCTime(filename_timestamp);
+    Stprintf(event_file_name, MSGSIZE, PAL_T("/var/lib/waagent/events/%T.tld"), filename_timestamp);
 
-    json_object_set_string(telemetry_root_object, "operation", "omsconfighost");
-    json_object_set_string(telemetry_root_object, "message", new_msg_buffer);
-    json_object_set_boolean(telemetry_root_object, "success", 1);
-
-    json_serialize_to_file(telemetry_root_value, "/var/opt/microsoft/omsconfig/status/omsconfighost");
+    json_serialize_to_file(telemetry_root_value, event_file_name);
 }
 
 void DSCFilePutLog(
