@@ -20,6 +20,7 @@ SHLIB_EXT: 'so'
 /opt/microsoft/${{SHORT_NAME}}/Scripts/protocol.py; intermediate/Scripts/protocol.py; 755; ${{RUN_AS_USER}}; root
 /opt/microsoft/${{SHORT_NAME}}/Scripts/nxDSCLog.py; intermediate/Scripts/nxDSCLog.py; 755; ${{RUN_AS_USER}}; root
 /opt/microsoft/${{SHORT_NAME}}/Scripts/zipfile2.6.py; intermediate/Scripts/zipfile2.6.py; 755; ${{RUN_AS_USER}}; root
+/opt/microsoft/${{SHORT_NAME}}/Scripts/OmsConfigHostHelpers.py; intermediate/Scripts/OmsConfigHostHelpers.py; 755; ${{RUN_AS_USER}}; root
 /opt/microsoft/${{SHORT_NAME}}/Scripts/StartDscConfiguration.py; intermediate/Scripts/StartDscConfiguration.py; 755; ${{RUN_AS_USER}}; root
 /opt/microsoft/${{SHORT_NAME}}/Scripts/TestDscConfiguration.py; intermediate/Scripts/TestDscConfiguration.py; 755; ${{RUN_AS_USER}}; root
 /opt/microsoft/${{SHORT_NAME}}/Scripts/GetDscConfiguration.py; intermediate/Scripts/GetDscConfiguration.py; 755; ${{RUN_AS_USER}}; root
