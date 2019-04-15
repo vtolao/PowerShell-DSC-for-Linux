@@ -29,7 +29,7 @@ dsc_host_switch_path = join(dsc_host_base_path, 'dsc_host_ready')
 dsc_host_telemetry_path = join(dsc_host_base_path, '/var/opt/microsoft/omsconfig/status/omsconfighost')
 
 if ("omsconfig" in helperlib.DSC_SCRIPT_PATH):
-    with open(dsc_host_telemetry_path) as host_telemetry_file:
+    with open(dsc_host_telemetry_path, 'r+') as host_telemetry_file:
         host_telemetry_json = json.load(host_telemetry_file)
 
     msg_template = '<OMSCONFIGLOG>[{}] [{}] [{}] [{}] [{}:{}] {}</OMSCONFIGLOG>'

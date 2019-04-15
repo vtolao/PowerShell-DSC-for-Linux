@@ -129,7 +129,7 @@ def perform_inventory(args):
     inventorylock_path = join(dsc_sysconfdir, 'inventory_lock')
 
     if ("omsconfig" in helperlib.DSC_SCRIPT_PATH):
-        with open(dsc_host_telemetry_path) as host_telemetry_file:
+        with open(dsc_host_telemetry_path, 'r+') as host_telemetry_file:
             host_telemetry_json = json.load(host_telemetry_file)
 
         msg_template = '<OMSCONFIGLOG>[{}] [{}] [{}] [{}] [{}:{}] {}</OMSCONFIGLOG>'
