@@ -27,7 +27,7 @@ INCLUDES= \
 
 DEFINES= TEST_BUILD
 
-LIBRARIES = mi  $(UNITTESTLIBS) pal 
+LIBRARIES = mi  $(UNITTESTLIBS) pal rt
 
 include $(OMI)/mak/rules.mak
 
