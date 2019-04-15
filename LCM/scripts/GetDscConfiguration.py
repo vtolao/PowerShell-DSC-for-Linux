@@ -39,7 +39,6 @@ if ("omsconfig" in helperlib.DSC_SCRIPT_PATH):
         msg_buffer = 'Falling back to OMI'
     new_msg = msg_template.format(timestamp, os.getpid(), 'INFO', 0, pathToCurrentScript, 0, msg_buffer)
     host_telemetry_json['message'] += new_msg
-    json.dump(host_telemetry_json, dsc_host_telemetry_path)
     with open(dsc_host_telemetry_path, 'a+') as host_telemetry_file:
         json.dump(host_telemetry_json, host_telemetry_file)
 
