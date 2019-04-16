@@ -5,12 +5,15 @@ import datetime
 import os
 
 def write_omsconfig_host_telemetry(message):
-    dsc_host_telemetry_path = '/var/opt/microsoft/omsconfig/status/omsconfighost'
+    omsagent_telemetry_path = '/var/opt/microsoft/omsconfig/status'
+    dsc_host_telemetry_path = join(omsagent_telemetry_path, 'omsconfighost')
 
     if os.path.isfile(dsc_host_telemetry_path):
         with open(dsc_host_telemetry_path) as host_telemetry_file:
             host_telemetry_json = json.load(host_telemetry_file)
     else:
+        if not os.path.exists(omsagent_telemetry_path):
+            os.makedirs(omsagent_telemetry_path)
         os.mknod(dsc_host_telemetry_path)
         host_telemetry_json = {}
         host_telemetry_json['operation'] = 'omsconfighost'
