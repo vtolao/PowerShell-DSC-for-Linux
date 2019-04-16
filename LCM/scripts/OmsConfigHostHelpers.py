@@ -3,28 +3,24 @@ import json
 import time
 import datetime
 import os
-import os.path
 
 def write_omsconfig_host_telemetry(message):
-    event_params = {}
-    event_params['Name'] = 'Microsoft.EnterpriseCloud.Monitoring.OmsConfigHost'
-    event_params['Version'] = '1.0'
-    event_params['IsInternal'] = False
-    event_params['Operation'] = 'omsconfig_host_wrapper'
-    event_params['OperationSuccess'] = True
-    event_params['Message'] = message
-    event_params['Duration'] = 0
-    event_params['ExtentionType'] = ''
-    
-    event = {}
-    event['providerId'] = '69B669B9-4AF8-4C50-BDC4-6006FA76E975'
-    event['parameters'] = event_params
-    event['eventId'] = 1
+    dsc_host_telemetry_path = '/var/opt/microsoft/omsconfig/status/omsconfighost'
 
-    event_filename = "/var/lib/waagent/events/%d.tld" % (time.time()*1000000000)
+    if os.path.isfile(dsc_host_telemetry_path):
+        os.mknod(dsc_host_telemetry_path)
+        host_telemetry_json = {}
+        host_telemetry_json['operation'] = 'omsconfighost'
+        host_telemetry_json['message'] = ''
+        host_telemetry_json['success'] = 1
+    else:
+        with open(dsc_host_telemetry_path) as host_telemetry_file:
+            host_telemetry_json = json.load(host_telemetry_file)
 
-    with open(event_filename, 'w+') as event_file:
-        json.dump(event, event_file)
+    host_telemetry_json['message'] += message
+
+    with open(dsc_host_telemetry_path, 'a+') as host_telemetry_file:
+        json.dump(host_telemetry_json, host_telemetry_file)
 
 def write_omsconfig_host_event(pathToCurrentScript, dsc_host_switch_exists):
     msg_template = '<OMSCONFIGLOG>[{}] [{}] [{}] [{}] [{}:{}] {}</OMSCONFIGLOG>'
