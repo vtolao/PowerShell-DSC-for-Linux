@@ -8,14 +8,14 @@ def write_omsconfig_host_telemetry(message):
     dsc_host_telemetry_path = '/var/opt/microsoft/omsconfig/status/omsconfighost'
 
     if os.path.isfile(dsc_host_telemetry_path):
+        with open(dsc_host_telemetry_path) as host_telemetry_file:
+            host_telemetry_json = json.load(host_telemetry_file)
+    else:
         os.mknod(dsc_host_telemetry_path)
         host_telemetry_json = {}
         host_telemetry_json['operation'] = 'omsconfighost'
         host_telemetry_json['message'] = ''
         host_telemetry_json['success'] = 1
-    else:
-        with open(dsc_host_telemetry_path) as host_telemetry_file:
-            host_telemetry_json = json.load(host_telemetry_file)
 
     host_telemetry_json['message'] += message
 
