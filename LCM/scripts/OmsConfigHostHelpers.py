@@ -1,6 +1,9 @@
 #!/usr/bin/python
 import json
 import time
+import datetime
+import os
+import os.path
 
 def write_omsconfig_host_telemetry(message):
     event_params = {}
