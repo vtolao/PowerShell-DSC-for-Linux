@@ -7,7 +7,7 @@ import time
 import datetime
 import os
 import os.path
-import OmsConfigHostHelpers
+from OmsConfigHostHelpers import write_omsconfig_host_telemetry, write_omsconfig_host_event
 
 from imp                import load_source
 from os.path            import dirname, isfile, join, realpath

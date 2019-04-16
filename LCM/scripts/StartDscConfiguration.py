@@ -13,7 +13,7 @@ import time
 import datetime
 import os
 import os.path
-import OmsConfigHostHelpers
+from OmsConfigHostHelpers import write_omsconfig_host_telemetry, write_omsconfig_host_event
 
 pathToCurrentScript = realpath(__file__)
 pathToCommonScriptsFolder = dirname(pathToCurrentScript)
