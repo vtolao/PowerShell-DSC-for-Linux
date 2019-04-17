@@ -6,7 +6,7 @@ import os
 
 def write_omsconfig_host_telemetry(message):
     omsagent_telemetry_path = '/var/opt/microsoft/omsconfig/status'
-    dsc_host_telemetry_path = join(omsagent_telemetry_path, 'omsconfighost')
+    dsc_host_telemetry_path = os.path.join(omsagent_telemetry_path, 'omsconfighost')
 
     if os.path.isfile(dsc_host_telemetry_path):
         with open(dsc_host_telemetry_path) as host_telemetry_file:
